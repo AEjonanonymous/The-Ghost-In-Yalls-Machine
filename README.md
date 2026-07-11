@@ -1,4 +1,4 @@
-<div align="center"><h1>👻 The Ghost in Y'alls Machines 🤖</h1></div>
+<div align="center"><h1>👻 The Ghost in Y'alls Machine 🤖</h1></div>
 <div align="center"><h3><i>Resolving the Black Box Interpretability Problem by Proving the Mathematical Necessity of J-space via Hessian Rank Deficiency in Lean 4</i></h3></div>
 
 ---
