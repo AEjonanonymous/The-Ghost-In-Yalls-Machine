@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+message: "Please cite this research as follows."
+authors:
+  - name: "Jonathan ƒ(n)"
+title: "The Ghost In Y'alls Machine: Resolving the Black Box Interpretability Problem by Proving the Mathematical Necessity of J-space via Hessian Rank Deficiency in Lean 4"
+version: 1.0.0
+doi: 10.5281/zenodo.21304687
+date-released: 2026-07-11
