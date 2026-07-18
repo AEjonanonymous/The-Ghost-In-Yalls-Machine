@@ -1,8 +1,8 @@
 import Lake
 open Lake DSL
 
-package «the-ghost-in-yalls-machine» where
+package «TheGhostInYallsMachine» where
 
 @[default_target]
-lean_lib «the-ghost-in-yalls-machine» where
+lean_lib «TheGhostInYallsMachine where
   srcDir := "."
