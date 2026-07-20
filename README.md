@@ -32,6 +32,43 @@ In the active subspace regime, the second term vanishes as the model nears the m
 ### 4. Synthesis: The Inevitable Conclusion
 Since $rank(H) < n$, the Hessian has a non-trivial kernel (a "Ghost Grid"). Gradient flow $\dot{\theta}=-\nabla L(\theta)$ is driven by the eigenvalues of $H$. Eigenvectors corresponding to the zero/near-zero eigenvalues (the kernel) do not contribute to the reduction of loss. Therefore, the gradient flow is mathematically forced to exist only in the span of the eigenvectors of $H$ with non-zero eigenvalues. The model is physically incapable of forming meaningful structures in these dimensions because the gradient flow vanishes in the kernel.
 
+```lean
+theorem null_space_junction (Jf : Matrix (Fin m) (Fin n) ℝ) (v : Fin n → ℝ) 
+  (h_kernel : Jf *ᵥ v = 0) : 
+  Hessian Jf *ᵥ v = 0 := by
+  unfold Hessian
+  ext i
+  dsimp [Matrix.mulVec, dotProduct]
+  
+  -- Expand the definition of Hessian matrix product
+  have h_sum : ∑ j, (Jfᵀ * Jf) i j * v j = ∑ k, Jf k i * (Jf *ᵥ v) k := by
+    calc ∑ j, (Jfᵀ * Jf) i j * v j
+      _ = ∑ j, (∑ k, Jfᵀ i k * Jf k j) * v j := by
+          refine Finset.sum_congr rfl (fun j _ => ?_)
+          rw [Matrix.mul_apply]
+      _ = ∑ j, ∑ k, (Jfᵀ i k * Jf k j) * v j := by
+          refine Finset.sum_congr rfl (fun j _ => ?_)
+          exact Finset.sum_mul _ _ (v j)
+      _ = ∑ j, ∑ k, Jf k i * Jf k j * v j := by
+          refine Finset.sum_congr rfl (fun j _ => ?_)
+          refine Finset.sum_congr rfl (fun k _ => ?_)
+          rw [Matrix.transpose_apply, mul_assoc]
+      _ = ∑ k, ∑ j, Jf k i * (Jf k j * v j) := by
+          rw [Finset.sum_comm]
+          refine Finset.sum_congr rfl (fun k _ => Finset.sum_congr rfl (fun j _ => by ring))
+      _ = ∑ k, Jf k i * ∑ j, Jf k j * v j := by
+          refine Finset.sum_congr rfl (fun k _ => ?_)
+          exact (Finset.mul_sum _ _ _).symm
+      _ = ∑ k, Jf k i * (Jf *ᵥ v) k := by
+          refine Finset.sum_congr rfl (fun k _ => ?_)
+          congr 1
+
+  rw [h_sum]
+  have h_k_zero (k : Fin m) : (Jf *ᵥ v) k = 0 := by 
+    rw [h_kernel]
+    rfl
+  simp_rw [h_k_zero, mul_zero, Finset.sum_const_zero]
+```
 ---
 
 ## 💻 Verification in Lean 4 Web
@@ -41,7 +78,9 @@ This repository contains the formal proof of existence, verifying that the Hessi
 **Status:** No goals ✅
 
 * 💾 `theorem_hessian_rank_deficiency.lean`: The core formalization of the definitions, Dimensionality Lemma, and the Rank Argument in Lean 4.
-* 🔗 **[Run the Proof in Browser](https://live.lean-lang.org/#project=mathlib-stable&codez=JYWwDg9gTgLgBAWQIYwBYBtgCMB0AZYAOwFMkoBBdAc2KyiR2RimAA8cAlJQgawChQkWIhQZsOACIoGTFuwBCSAM7AAxgPDR4TMbikwGHUuhyKV6vhDDFCI5mz58AbmWBIs6YnADetkHAAuOEBUQgBfRwB6AFoAQj4AYkS4AEYcOAliADMiYBhgCEIlPkBp0jg8YnhMoMAM4DhAJMI4QFxCAD1%2FLC80LxIAV3p0OBIYAHdoHjSSsoqygApADuAASjgAXhSIgCY4AB9NzLnFqLgAT23mtfHSgBVULwAJYiUVbjhgJTgbveW4ACkAfV2F5oXb5%2FD4AajggGLgODTTI%2FYAfA6HOGLQDgRKc4LD4QtxlEIo4ogcMtkSHBOm97o9bN0VIQqKTrqT6IVIEovBBMt9MnwACZZckPNy2aZfDlBWRsaEAMSIcBAi2m0tshEWjUWYpQcilMuVWqVKsCKz4cGhzG4ShZXhFiwAVJzIrEEkkznArl4JKAbCoCkhMDBDpMQCAkBMAJK2MkAInIqjyTi8AGVulhzUhVMQI3AoMQqB6ADT0rys1QFbmk4hQfzTMlKbr%2BdmZ%2B7AbndH1KRbObgva6vZQF2UQXn9EhkV5koOEYCZCDoUv1snc6TnF3XLNTrP594LOCACSJgf95oC93scHxcfiDlcXnBPIGkA3MPc4AU7LoAOSvLi8OBgKBWct%2BjFoFlDUJRAbp0DyMBMFUFB8kIPgbyDTNuB4H5u0pH5iAARx%2BJlUIAK1TCAsEFaERUCOxNQVGU5V1AYVTVOAjWQr9pjuAUnitT48M5A04CwQ5mIJFjUNNZkIFZH4wPQH5WXQDkr15YliFLNc4G4f0WFpOAhlyVA%2BxINMHjIf0fz%2FWBgHuZjiFYVN4Dwn4xPNCTiCk8DZOIeS7T4aI4kSeI4AAZjSV04E%2FHg4HIKAqFrGwYAmX592eHs%2FDgVgBmA%2Bx0umCBuhgMA8tedKwDIJAQAqcs2yXEMOXnaRgInKcZzgVBe25D1CjguAIoAHgGfNOlsPDhT%2BRZABMibql3kf0yTM6wLMfesgyy79f2bGMlHzYavkPL5FhWbb5iXK5qS2lC2PG7q4D6wgTzPPhOmgYh%2FAcpS1EswhVH9YVRUoiVqL8eVFXopp5QioJgnbY1plQH4FwMOHQAo3qQZh3CUIonjyImnhGOYni2IpUiuJuviBKEg5E2TPIYDyrxhpuRZdLQEThXmfGhjgABtBz0MFTCcIcwjixI7gAF0KbgAB1LoIE51q4xE3icfUwhSxRwh8yUCAlfIm7rNsmM4AAORQHAIJ%2Bdkfk8S3YQglr0a%2FWH4aQRGQCAA)**
+* 💾 `theorem_nullspace_collapse.lean`: Formally proves that perturbation vectors in the Jacobian's null space vanish completely under the Hessian map, neutralizing gradient flow in those dimensions.
+
+🔗 **[Run the Proof in Browser](https://live.lean-lang.org/#project=mathlib-stable&codez=JYWwDg9gTgLgBAWQIYwBYBtgCMB0AZYAOwFMkoBBdAc2KyiR2RimAA8cAlJQgawChQkWIhQZsOACIoGTFuwBCSAM7AAxgPDR4TMbikwGHUuhyKV6vhDDFCI5mz58AbmWBIs6YnADetkHAAuOEBUQgBfRwB6AFoAQj4AYkS4AEYcOAliADMiYBhgCEIlPkBp0jg8YnhMoMAM4DhAJMI4QFxCAD1%2FLC80LxIAV3p0OBIYAHdoHjSSsoqygApADuAASjgAXhSIgCY4AB9NzLnFqLgAT23mtfHSgBVULwAJYiUVbjhgJTgbveW4ACkAfV2F5oXb5%2FD4AajggGLgODTTI%2FYAfA6HOGLQDgRKc4LD4QtxlEIo4ogcMtkSHBOm97o9bN0VIQqKTrqT6IVIEovBBMt9MnwACZZckPNy2aZfDlBWRsaEAMSIcBAi2m0tshEWjUWYpQcilMuVWqVKsCKz4cGhzG4ShZXhFiwAVJzIrEEkkznArl4JKAbCoCkhMDBDpMQCAkBMAJK2MkAInIqjyTi8AGVulhzUhVMQI3AoMQqB6ADT0rys1QFbmk4hQfzTMlKbr%2BdmZ%2B7AbndH1KRbObgva6vZQF2UQXn9EhkV5koOEYCZCDoUv1snc6TnF3XLNTrP594LOCACSJgf95oC93scHxcfiDlcXnBPIGkA3MPc4AU7LoAOSvLi8OBgKBWct%2BjFoFlDUJRAbp0DyMBMFUFB8kIPgbyDTNuB4H5u0pH5iAARx%2BJlUIAK1TCAsEFaERUCOxNQVGU5V1AYVTVOAjWQr9pjuAUnitT48M5A0mONPCflNZkIFZH4wPQH5WXQDkRXtOJEniOAAGY0ldOBPx4OByCgKhaxsGAJl%2Bfdnh7Pw4FYAZgPsSzpggboYDABzXkssAyCQEAKnLNslxDDl52kYCJynGc4FQXtuQ9Qo4LgLSAB4BnzTpbDw4U%2FkWQATIlipd5H9Mkfz%2FWBgEfesgxs79f2bGMlHzVKvkPL5FhWOr5iXK5qVqlC2My2K4ASwgTzPPhOmgYh%2FEE3lslUYrCFUf1hVFSiJWovx5UVeimnlLSgmCdtjWmVAfgXAwjtACj4o2g7cJQiiePIrKeEY5ieLYilSK4%2Fq%2BKwQ5nqGOAAG1BPQwVMJwwTCOLEjuAAXWY4hWFTeAADkUBwCCfnZH5PAx2EILC66v0O46kFOkB5MdJSABY1IZMNiCcXJ3E8OAAGEClUdBqTgiZ4yINMWJ4bq%2BsSvt2MpMLezvQgCiiewGZ9WLyxIfppjvCMAHFUFE%2BB1ZYbkI1aiZdaQSKDIxdAID%2BgAdbkIBgbwrc6AxQk%2BKIrcIJm7zwaZHeuAxFivbkWDjWxvr7YhgBoQgXE5kqORuE9SgAUUjmw4xjaBXmLKAs3NEsiDpGAID7AAvcsIAiYcoCiMvfzgCOo5j7pHyrBkeCV4h0EWW2BjtuBi0IewsAcjpi7JLMqryZ96wth5E%2BXcsslGpKGSoehTcH83LdM6zrjKtQfXQf01zTUsi%2Fr1gXngAoj%2BecMGRTWw5wZBu0%2BIDOoFeesbjgIZclQXuhAa7l3rqnaOPpm5KEGniYa1xRr%2BEIOBSSKY0w%2FHwt0WaU8hTkXVOVFaso1ragYtCJwFF1q2AaKqfi0JDrtygMrCi5FrSAFNcOApCVgAAYnrGjFu9DkLC2GfA4V9H6xoMEhVLLw7gcNWDwGAMxbkKhwAA3FOwCSAA1d%2B%2BZbYwAAAqVW6DGWGxpmIEjgEnVgblCBnwZJNHIWCnzxzek8MqmoCqT2YuFOM%2BMaz%2BCCIARCI4D4XzAtQAArhwFtFxYAQSImCPwp8QJPB8zkS0tE20C0ImsKcIsbaKxvrMWNDBdAqg4CBOCWRTI4TImZADjE20pD8IFONHAH4CSgkhMSckypzxerVN6vhG0cSRFNOac01cRAvCKlZDAHAvifgDzXpmTIKtMgYJia0pYAA%2BOAAB%2BH48wRmjMzH9f6qicASR%2BEgMAUFDjGKORs0p7THlJIqeE6JWk%2BlaQGbEhpwyjlHPGSSKZFRZm1nmQURZUBlnQlWbYeJGztl7IOf80Z8NEZwGBTMuZEkWm4umA05F9y2nlM6bxVJsSUl1KGQEPJoiUUCSyBMjFRBpmgpAOC2kUAlkrLWfC5YiL9mHNGYCyZLKQVzIWVyqFPLbBaQRbswV9KBInLOcJPOYkrk3PzBc5QSgICqDuaMh5pKyldN6mkip%2FSflBLVLSoVYyTmYrZeCwMhqUUiuZYUcVYLJXcphWsuV%2FLPWsolRCqV0KYS8txVsuAYcWC0nmISo1bSXmUotaaslVLfk0tjXS%2BlHqnWhs5X6yNsro0CqTSitFMZdSsoub43FrT9mzMOIGQ5xrYpmvJekphWScl%2FKVQWsVWKfVhpLbC3q8qkX2sKWO5IjhlUA0Or4u5XivC0J%2BLXYu0xtqeoIRRDJAjsm9U4SI6hi7%2Fq0I7ugN10rmJKLALhE5G6t3avApu8u%2BZC2jsKDAD9v5oZAA)**
 
 ---
 
