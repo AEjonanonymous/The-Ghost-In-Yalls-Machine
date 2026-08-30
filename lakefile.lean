@@ -10,5 +10,5 @@ require mathlib from git
 lean_lib «theorem_hessian_rank_deficiency» where
   srcDir := "."
 
-lean_lib «OPN-Proof2» where
+lean_lib «theorem_nullspace_collapse» where
   srcDir := "."
